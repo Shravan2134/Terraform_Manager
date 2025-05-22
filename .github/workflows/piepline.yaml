@@ -1,0 +1,33 @@
+name: Terraform Pipeline
+
+on:
+  push:
+    branches:
+      - '**'  
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Authenticate with GCP
+        run: |
+          echo "${{ secrets.GCP_CREDENTIALS }}" > $HOME/credentials.json
+          gcloud auth activate-service-account github-actions-sa@pure-girder-452812-r3.iam.gserviceaccount.com --key-file=$HOME/credentials.json
+
+      - name: Initialize Terraform
+        run: terraform init -reconfigure
+
+      - name: Plan Terraform Changes
+        run: terraform plan -out=tfplan
+
+      - name: Apply Terraform Changes
+        run: terraform apply -auto-approve tfplan
